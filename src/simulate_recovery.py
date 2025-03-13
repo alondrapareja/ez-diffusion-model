@@ -87,9 +87,9 @@ def simulate_recover(N):
         a_bias = a_true-a_est
         t_bias = t_true-t_est
 
-        results.append([v_true,a_true,v_est,t_est,v_bias,a_bias,t_bias])
+        results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias])
 
-    return pd.DataFrame(results, columns=["v_true","a_true","v_est","t_est","v_bias","a_bias","t_bias"])
+    return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias"])
 
 #Run simulation for different N values & save results
 def main():
