@@ -108,4 +108,4 @@ if __name__ == "__main__":
 
 # ISSUES
 # 1) How do you generate R_obs (line 55)? Does it have to be a fixed value or is it supposed to be randomly generated?
-# 2) The squared error for N is should decrease as N increases but instead, it is increasing. Did I write the equations incorrectly? 
+# 2) The squared error for N should decrease as N increases but instead, it is increasing. Did I write the equations incorrectly? 
