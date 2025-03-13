@@ -28,7 +28,7 @@
 
 import numpy as np
 import pandas as pd
-from scipy.stats import nibom, norm
+import scipy.stats as stats
 
 #Set random seed for reproducibility
 np.random.seed(42)
@@ -39,14 +39,11 @@ v_range = (0.5,2) # Drift rate #v
 t_range = (0.1,0.5) #Nondecision time #tau
 
 #Sample sizes
-N_values = [10,40,400]
+N_values = [10,40,4000]
 iterations = 1000
 
 #Forward equations (Equations 1-3)
 def forward_equations(v,a,t):
-    a  = 0.6
-    v = 1.0
-    t = 0.3
     y = np.exp(-a*v) #Where do it get a and v values? Does it randomly select them from paranmeter ranges above? Or do i provide a fixed value?
     R_pred = 1/(y+1) #Accuracy rate / Equation 1
     M_pred = t + (a/(2*v))*((1-y)/(1+y)) #Mean RT / Equation 2
@@ -59,8 +56,8 @@ def inverse_equations(R_obs, M_obs, V_obs): #How do you get R_obs?
     L = np.log(R_obs/(1-R_obs))
     #Compute v_est
     numerator = L*(R_obs**2*L-R_obs*L+R_obs-0.5)
-    v_est = np.sign(R_obs-0.5)*(numerator/V_obs)**1/4 #Equation 4
-    #Comoute a_est 
+    v_est = np.sign(R_obs-0.5)*(numerator/V_obs)**(1/4) #Equation 4
+    #Compute a_est 
     a_est = L/v_est #Equation 5
     #Compute t_est
     exp_term = np.exp(-v_est*a_est)
@@ -72,10 +69,33 @@ def simulate_recover(N):
     results = []
     for _ in range(iterations):
         #Generate the true parameters
+        v_true = np.random.uniform(*v_range)
+        a_true = np.random.uniform(*a_range)
+        t_true = np.random.uniform(*t_range)
+
         #Compute predicted stats
+        R_pred, M_pred, V_pred = forward_equations(v_true, a_true, t_true)
         #Simulate observed stats
+        T_obs = stats.binom.rvs(N, R_pred) #Binomial distribution #Number of correct trials
+        R_obs = T_obs/N #Do i need this? How do I compute it?
+        M_obs = stats.norm.rvs(M_pred, np.sqrt(V_pred/N)) #Normal distribution
+        V_obs = stats.gamma.rvs (a=(N-1)/2, scale=2*V_pred/(N-1)) #Gamma distribution 
         #Recover estimated parameters
+        v_est, a_est, t_est = inverse_equations(R_obs,M_obs,V_obs)
         #Compute bias and squared error
         v_bias = v_true-v_est
         a_bias = a_true-a_est
         t_bias = t_true-t_est
+
+        results.append([v_true,a_true,v_est,t_est,v_bias,a_bias,t_bias])
+
+    return pd.DataFrame(results, columns=["v_true","a_true","v_est","t_est","v_bias","a_bias","t_bias"])
+
+#Run simulation for different N values & save results
+def main():
+    for N in N_values:
+        df = simulate_recover(N)
+        df.to_csv(f"data/results_n{N}.csv", index=False)
+        print(f"Completed simulation for N={N}")
+if __name__ == "__main__":
+    main()
