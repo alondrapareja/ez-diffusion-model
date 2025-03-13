@@ -31,7 +31,7 @@ import pandas as pd
 import scipy.stats as stats
 
 #Set random seed for reproducibility
-np.random.seed(42)
+np.random.seed(1234)
 
 #Parameter ranges
 a_range = (0.5,2) # Boundary seperation #alpha
@@ -51,7 +51,7 @@ def forward_equations(v,a,t):
     return R_pred, M_pred, V_pred
 
 #Inverse equations to estimate parameters (Equations 4-6 )
-def inverse_equations(R_obs, M_obs, V_obs): #How do you get R_obs?
+def inverse_equations(R_obs, M_obs, V_obs): #How do you get R_obs? 
     R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
     L = np.log(R_obs/(1-R_obs))
     #Compute v_est
@@ -86,10 +86,15 @@ def simulate_recover(N):
         v_bias = v_true-v_est
         a_bias = a_true-a_est
         t_bias = t_true-t_est
+        #Compute squared error
+        v_squared_error = v_bias**2
+        a_sqaured_error = a_bias**2
+        t_squared_error = t_bias**2
 
-        results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias])
+        #Store the results
+        results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias,v_squared_error,a_sqaured_error,t_squared_error])
 
-    return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias"])
+    return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias","v_squared_error","a_sqaured_error","t_squared_error"])
 
 #Run simulation for different N values & save results
 def main():
@@ -97,5 +102,10 @@ def main():
         df = simulate_recover(N)
         df.to_csv(f"data/results_n{N}.csv", index=False)
         print(f"Completed simulation for N={N}")
+
 if __name__ == "__main__":
     main()
+
+# ISSUES
+# 1) How do you generate R_obs (line 55)? Does it have to be a fixed value or is it supposed to be randomly generated?
+# 2) The squared error for N is should decrease as N increases but instead, it is increasing. Did I write the equations incorrectly? 
