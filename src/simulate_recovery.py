@@ -31,12 +31,16 @@ import pandas as pd
 import scipy.stats as stats
 
 #Set random seed for reproducibility
-np.random.seed(1234)
+np.random.seed(1233)
 
 #Parameter ranges
-a_range = (0.5,2) # Boundary seperation #alpha
-v_range = (0.5,2) # Drift rate #v
+a_range = (0.5,2.0) # Boundary seperation #alpha
+v_range = (0.5,2.0) # Drift rate #v
 t_range = (0.1,0.5) #Nondecision time #tau
+
+# np.random.uniform(low=a_range[0], high=a_range[1])
+# np.random.uniform(low=v_range[0],high=v_range[1])
+# np.random.uniform(low=t_range[0],high=t_range[1])
 
 #Sample sizes
 N_values = [10,40,4000]
@@ -52,7 +56,11 @@ def forward_equations(v,a,t):
 
 #Inverse equations to estimate parameters (Equations 4-6 )
 def inverse_equations(R_obs, M_obs, V_obs): #How do you get R_obs? 
-    R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
+    # R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
+    if R_obs >= 1:
+        R_obs=0.99
+    elif R_obs<=0:
+        R_obs=0.01
     L = np.log(R_obs/(1-R_obs))
     #Compute v_est
     numerator = L*(R_obs**2*L-R_obs*L+R_obs-0.5)
@@ -67,7 +75,8 @@ def inverse_equations(R_obs, M_obs, V_obs): #How do you get R_obs?
 #Simulate and Recover Parameters
 def simulate_recover(N):
     results = []
-    for _ in range(iterations):
+
+    for i in range(N):
         #Generate the true parameters
         v_true = np.random.uniform(*v_range)
         a_true = np.random.uniform(*a_range)
@@ -75,17 +84,21 @@ def simulate_recover(N):
 
         #Compute predicted stats
         R_pred, M_pred, V_pred = forward_equations(v_true, a_true, t_true)
+
         #Simulate observed stats
         T_obs = stats.binom.rvs(N, R_pred) #Binomial distribution #Number of correct trials
-        R_obs = T_obs/N #Do i need this? How do I compute it?
+        R_obs = T_obs/N 
         M_obs = stats.norm.rvs(M_pred, np.sqrt(V_pred/N)) #Normal distribution
         V_obs = stats.gamma.rvs (a=(N-1)/2, scale=2*V_pred/(N-1)) #Gamma distribution 
+
         #Recover estimated parameters
         v_est, a_est, t_est = inverse_equations(R_obs,M_obs,V_obs)
-        #Compute bias and squared error
+
+        #Compute bias 
         v_bias = v_true-v_est
         a_bias = a_true-a_est
         t_bias = t_true-t_est
+
         #Compute squared error
         v_squared_error = v_bias**2
         a_sqaured_error = a_bias**2
