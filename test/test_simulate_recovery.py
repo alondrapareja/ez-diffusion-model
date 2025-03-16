@@ -75,5 +75,23 @@ class TestEZDiffusions(unittest.TestCase):
         self.assertGreater(a_est,0, "Estimated boundary seperation should be positive")
         self.assertGreater(t_est,0, "Estimated non-decision time should be positive")
 
+    def test_bias_average_zero(self):
+        #Checcks that bias in estimated parameters is close to zero across many simulations
+        df = self.model.simulate_recover(N=4000)
+
+        self.assertAlmostEqual(np.mean(df['v_bias']),0,places=2,msg="Mean v_bias should be close to 0")
+        self.assertAlmostEqual(np.mean(df['a_bias']),0,places=2,msg="Mean a_bias should be close to 0")
+        self.assertAlmostEqual(np.mean(df['t_bias']),0,places=2,msg="Mean t_bias should be close to 0")
+        
+    def test_squared_errors_decrease(self):
+        #Checks that the squared error decreases as N increases
+        errors = []
+        for N in self.model.N_values:
+            df=self.model.simulate_recover(N)
+            total_error=df[['v_squared_error', 'a_squared_error', 't_squared_error']].mean().sum()
+            errors.append(total_error)
+
+        self.assertTrue(errors[0]>errors[1]>errors[2],"Squared errors should decreases with larger N")
+
 if __name__ == "__main__":
     unittest.main()
