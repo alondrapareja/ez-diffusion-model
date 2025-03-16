@@ -49,19 +49,26 @@ class EZDiffusionModel:
 
     #Forward equations (Equations 1-3)
     def forward_equations(self,v,a,t):
+        if v<0 or a <0 or t<0:
+            raise ValueError("Parameters must be positive")
         y = np.exp(-a*v) #Where do it get a and v values? Does it randomly select them from paranmeter ranges above? Or do i provide a fixed value?
         R_pred = 1/(y+1) #Accuracy rate / Equation 1
         M_pred = t + (a/(2*v))*((1-y)/(1+y)) #Mean RT / Equation 2
         V_pred = (a/(2*v**3))*((1-2*a*v*y-y**2)/(y+1)**2) #Variance RT / Equation 3
         return R_pred, M_pred, V_pred
 
+
     #Inverse equations to estimate parameters (Equations 4-6 )
-    def inverse_equations(self,R_obs, M_obs, V_obs): #How do you get R_obs? 
-        # R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
-        if R_obs >= 1:
-            R_obs=0.99
-        elif R_obs<=0:
-            R_obs=0.01
+    def inverse_equations(self,R_obs, M_obs, V_obs):
+        if R_obs == 0 or R_obs == 1:
+            raise ZeroDivisionError("R_obs cannot be 0 or 1")
+        if R_obs <0 or R_obs>1:
+            raise ValueError("R_obs must be between 0 and 1")
+        if M_obs<0 or V_obs<0:
+            raise ValueError("M_obs and V_obs must be non-negatives")
+
+        #R_obs = np.clip(R_obs,0.01,0.99)
+        #R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
         L = np.log(R_obs/(1-R_obs))
         #Compute v_est
         numerator = L*(R_obs**2*L-R_obs*L+R_obs-0.5)
@@ -102,13 +109,13 @@ class EZDiffusionModel:
 
             #Compute squared error
             v_squared_error = v_bias**2
-            a_sqaured_error = a_bias**2
+            a_squared_error = a_bias**2
             t_squared_error = t_bias**2
 
             #Store the results
-            results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias,v_squared_error,a_sqaured_error,t_squared_error])
+            results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias,v_squared_error,a_squared_error,t_squared_error])
 
-        return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias","v_squared_error","a_sqaured_error","t_squared_error"])
+        return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias","v_squared_error","a_squared_error","t_squared_error"])
 
     #Run simulation for different N values & save results
     def run_simulation(self):
