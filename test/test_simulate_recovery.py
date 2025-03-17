@@ -76,13 +76,33 @@ class TestEZDiffusions(unittest.TestCase):
         self.assertGreater(t_est,0, "Estimated non-decision time should be positive")
 
     def test_bias_average_zero(self):
-        #Checcks that bias in estimated parameters is close to zero across many simulations
+        #Checks that bias in estimated parameters is close to zero across many simulations
         df = self.model.simulate_recover(N=4000)
 
         self.assertAlmostEqual(np.mean(df['v_bias']),0,places=2,msg="Mean v_bias should be close to 0")
         self.assertAlmostEqual(np.mean(df['a_bias']),0,places=2,msg="Mean a_bias should be close to 0")
         self.assertAlmostEqual(np.mean(df['t_bias']),0,places=2,msg="Mean t_bias should be close to 0")
         
+    def test_bias_zero_no_noise(self):
+        #Set all values to true and observe
+        v_true,a_true,t_true=1.0,1.5,0.2 #True parameters
+        R_pred,M_pred,V_pred=self.model.forward_equations(v_true,a_true,t_true)
+
+        T_obs=np.round(R_pred*1000) #Stimulate without noise
+        R_obs=max(min(T_obs/1000,0.99),0.01) #Clips to avoid R_obs = 0 or 1
+        M_obs = M_pred
+        V_obs=V_pred
+
+        v_est,a_est,t_est = self.model.inverse_equations(R_obs,M_obs,V_obs)
+
+        v_bias = v_true-v_est
+        a_bias = a_true-a_est
+        t_bias = t_true-t_est
+
+        self.assertAlmostEqual(v_bias, 0, places=2, msg="Bias for v should be close to 0")
+        self.assertAlmostEqual(a_bias, 0, places=2, msg="Bias for a should be close to 0")
+        self.assertAlmostEqual(t_bias, 0, places=2, msg="Bias for t should be close to 0")
+
     #def test_squared_errors_decrease(self):
         #Checks that the squared error decreases as N increases
         #errors = []
