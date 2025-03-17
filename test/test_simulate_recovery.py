@@ -107,7 +107,7 @@ class TestEZDiffusions(unittest.TestCase):
         #Checks that the squared error decreases as N increases
         #errors = []
         #for N in self.model.N_values:
-            #df=self.model.simulate_recover(N)
+           #df=self.model.simulate_recover(N)
             #total_error=df[['v_squared_error', 'a_squared_error', 't_squared_error']].mean().sum()
             #errors.append(total_error)
 
@@ -123,6 +123,9 @@ class TestEZDiffusions(unittest.TestCase):
         #Test invalid input (negative values for boundary seperation or drift rate)
         with self.assertRaises(ValueError):
             self.model.inverse_equations(-0.7,0.5,0.02) #Invalid R_obs (negative)
+
+        with self.assertRaises(ValueError):
+            self.model.inverse_equations(1.2,0.5,0.02) #Invalud R_obs (>1)
 
         with self.assertRaises(ValueError):
             self.model.forward_equations(1.5,-1.0,0.2) #Invalid boundary seperation (negative)
@@ -142,11 +145,16 @@ class TestEZDiffusions(unittest.TestCase):
         #R_obs = np.array([0.0,1.0]) #These should get clamped
         #M_obs,V_obs = 0.5,0.02
         #for R in R_obs:
-            #R_clamped = np.clip(R,0.01,0.99)
+           #R_clamped = np.clip(R,0.01,0.99)
             #v_est,a_est,t_est=self.model.inverse_equations(R_clamped,M_obs,V_obs)
             #self.assertGreater(v_est,0,f"Estimated drift rate should be positive for clamped R_obs={R_clamped}")
             #self.assertGreater(a_est,0,f"Estimated boundary seperation should be positive for clamped R_obs={R_clamped}")
             #self.assertGreater(t_est,0,f"Estimated non-decision time should be positive for clamped R_obs={R_clamped}")
 
+    def test_large_N(self):
+        N = 4000 #Large N
+        df=self.model.simulate_recover(N)
+        self.assertGreater(len(df),0,"The results should handle data even when N is large")
+        
 if __name__ == "__main__":
     unittest.main()
