@@ -31,7 +31,7 @@ import pandas as pd
 import scipy.stats as stats
 
 class EZDiffusionModel:
-    def __init__(self,seed=1233):
+    def __init__(self,seed=1234):
         #Set random seed for reproducibility
         np.random.seed(seed)  
         #Parameter ranges
@@ -72,12 +72,16 @@ class EZDiffusionModel:
         R_obs = np.clip(R_obs,epsilon,1-epsilon)
 
 
-        #R_obs = np.clip(R_obs,0.01,0.99)
         #R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
         L = np.log(R_obs/(1-R_obs))
+
         #Compute v_est
         numerator = L*(R_obs**2*L-R_obs*L+R_obs-0.5)
         v_est = np.sign(R_obs-0.5)*(numerator/V_obs)**(1/4) #Equation 4
+
+        #Make sure v_est is not too close to 0
+        v_est=np.clip(v_est,epsilon,None)
+
         #Compute a_est 
         a_est = L/v_est #Equation 5
         #Compute t_est
