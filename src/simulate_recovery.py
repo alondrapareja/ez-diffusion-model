@@ -57,15 +57,20 @@ class EZDiffusionModel:
         V_pred = (a/(2*v**3))*((1-2*a*v*y-y**2)/(y+1)**2) #Variance RT / Equation 3
         return R_pred, M_pred, V_pred
 
-
     #Inverse equations to estimate parameters (Equations 4-6 )
-    def inverse_equations(self,R_obs, M_obs, V_obs):
-        if R_obs == 0 or R_obs == 1:
-            raise ZeroDivisionError("R_obs cannot be 0 or 1")
-        if R_obs <0 or R_obs>1:
+    def inverse_equations(self,R_obs, M_obs, V_obs, epsilon=1e-5):
+        #Validate inputs
+        if not (0<=R_obs<=1):
             raise ValueError("R_obs must be between 0 and 1")
+        if R_obs == 0.0 or R_obs == 1.0:
+            raise ZeroDivisionError("R_obs can't be exactly 0 or 1 to avoid divison by 0 in log calculations")
+        
         if M_obs<0 or V_obs<0:
-            raise ValueError("M_obs and V_obs must be non-negatives")
+            raise ValueError("M_obs and V_obs must be non-negative")
+        
+        #Clips R_obs to avoid extreme erros 
+        R_obs = np.clip(R_obs,epsilon,1-epsilon)
+
 
         #R_obs = np.clip(R_obs,0.01,0.99)
         #R_obs = 0.7 #Make sure 0 < R_obs < 1 to avoid division by zero? (Check Lecture on how to best handle division by 0 case)
@@ -80,7 +85,7 @@ class EZDiffusionModel:
         t_est = M_obs-(a_est/(2*v_est))*((1-exp_term)/(1+exp_term)) #Equation 6
         return v_est, a_est, t_est
 
-    #Simulate and Recover Parameters
+   #Simulate and Recover Parameters
     def simulate_recover(self,N):
         results = []
 
@@ -111,8 +116,8 @@ class EZDiffusionModel:
             v_squared_error = v_bias**2
             a_squared_error = a_bias**2
             t_squared_error = t_bias**2
+             #Store the results
 
-            #Store the results
             results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias,v_squared_error,a_squared_error,t_squared_error])
 
         return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias","v_squared_error","a_squared_error","t_squared_error"])

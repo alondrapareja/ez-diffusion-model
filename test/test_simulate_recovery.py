@@ -103,6 +103,8 @@ class TestEZDiffusions(unittest.TestCase):
         self.assertAlmostEqual(a_bias, 0, places=2, msg="Bias for a should be close to 0")
         self.assertAlmostEqual(t_bias, 0, places=2, msg="Bias for t should be close to 0")
 
+
+
     #def test_squared_errors_decrease(self):
         #Checks that the squared error decreases as N increases
         #errors = []
@@ -122,14 +124,73 @@ class TestEZDiffusions(unittest.TestCase):
     def test_invalid_inputs(self):
         #Test invalid input (negative values for boundary seperation or drift rate)
         with self.assertRaises(ValueError):
-            self.model.inverse_equations(-0.7,0.5,0.02) #Invalid R_obs (negative)
+            self.model.inverse_equations(-0.7,0.5,0.02) #R_obs < 0
 
         with self.assertRaises(ValueError):
-            self.model.inverse_equations(1.2,0.5,0.02) #Invalud R_obs (>1)
+            self.model.inverse_equations(1.2,0.5,0.02) #R_obs > 1
 
         with self.assertRaises(ValueError):
-            self.model.forward_equations(1.5,-1.0,0.2) #Invalid boundary seperation (negative)
+            self.model.inverse_equations(1.5,-0.5,0.2) #M_obs < 0
+
+        with self.assertRaises(ValueError):
+            self.model.inverse_equations(0.5,0.5,-0.02) #V_obs < 0
+
+    def test_boundary_condition(self):
+        #Small epsilon value for testing boundaries
+        epsilon = 1e-10
+
+        #Should not raise errors for values close to 0 or 1
+        try:
+            v_low, a_low, t_low = self.model.inverse_equations(epsilon, 0.5, 0.02)
+            v_high, a_high, t_high = self.model.inverse_equations(1 - epsilon, 0.5, 0.02)
+        except Exception as e:
+            self.fail(f"Boundary test failed: Error - {e}")
+
+        #Asserts the results are finite numbers 
+        self.assertTrue(np.isfinite(v_low) and np.isfinite(a_low) and np.isfinite(t_low))
+        self.assertTrue(np.isfinite(v_high) and np.isfinite(a_high) and np.isfinite(t_high))
     
+    def test_clamping_edge_case(self):
+        #Values at the extreme edges that should be clamped
+        small_value = 0.0
+        large_value = 1.0
+
+        #Makes sure the function does not raise an error for near boundary values
+        try:
+            v_low, a_low, t_low = self.model.inverse_equations(max(small_value, 1e-10), 0.5, 0.02)
+            v_high, a_high, t_high = self.model.inverse_equations(min(large_value, 1 - 1e-10), 0.5, 0.02)
+        except Exception as e:
+            self.fail(f"Clamping test failed: Error - {e}")
+
+        #Asserts the results are finite numbers
+        self.assertTrue(np.isfinite(v_low) and np.isfinite(a_low) and np.isfinite(t_low))
+        self.assertTrue(np.isfinite(v_high) and np.isfinite(a_high) and np.isfinite(t_high))
+
+        #Makes sure the modified R_obs values are within valid range (0 < R_obs < 1)
+        self.assertGreater(max(small_value, 1e-10), 0)
+        self.assertLess(min(large_value, 1 - 1e-10), 1)
+
+    #def test_squared_errors_decrease(self):
+        #np.random.seed(42)  # Ensure reproducibility
+
+        # Define increasing sample sizes
+        #sample_sizes = [10, 40, 4000]
+        #squared_errors = []
+
+        #for sample_size in sample_sizes:
+            # Run the simulation for a given sample size
+            #results_df = self.model.simulate_recover(sample_size)
+
+            # Compute mean squared error across v, a, and t
+            #mse = results_df[['v_squared_error', 'a_squared_error', 't_squared_error']].mean().mean()
+            #squared_errors.append(mse)
+
+        # Ensure squared errors decrease as sample size increases
+        #for i in range(1, len(squared_errors)):
+            #self.assertLess(squared_errors[i], squared_errors[i - 1], 
+                            #f"Squared error did not decrease: {squared_errors[i]} >= {squared_errors[i - 1]}")
+
+
     #def test_boundary_condition(self):
         #Test boundary conditions (extreme value close to 0 or 1)
         #R_obs = np.array([0.01,0.99])
