@@ -99,7 +99,7 @@ class EZDiffusionModel:
             R_pred, M_pred, V_pred = self.forward_equations(v_true, a_true, t_true)
 
             #Simulate observed stats
-            T_obs = stats.binom.rvs(N, R_pred) #Binomial distribution #Number of correct trials
+            T_obs = min(max(1,stats.binom.rvs(N, R_pred)),N-1) #Binomial distribution #Number of correct trials
             R_obs = T_obs/N 
             M_obs = stats.norm.rvs(M_pred, np.sqrt(V_pred/N)) #Normal distribution
             V_obs = stats.gamma.rvs (a=(N-1)/2, scale=2*V_pred/(N-1)) #Gamma distribution 
@@ -132,7 +132,3 @@ class EZDiffusionModel:
 if __name__ == "__main__":
     model = EZDiffusionModel()
     model.run_simulation()
-
-    # ISSUES
-    # 1) How do you generate R_obs (line 55)? Does it have to be a fixed value or is it supposed to be randomly generated?
-    # 2) The squared error for N should decrease as N increases but instead, it is increasing. Did I write the equations incorrectly? 
