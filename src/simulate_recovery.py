@@ -103,7 +103,3 @@ class EZDiffusionModel:
 if __name__ == "__main__":
     model = EZDiffusionModel()
     model.run_simulation()
-
-#Issues
-# 1. Do I need the def run_simulation(self) on this file? Or do I turn it into bash?
-# 2. Do I keep the data file it creates under src or do i make the data directory outside or src?
