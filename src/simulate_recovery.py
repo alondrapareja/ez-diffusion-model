@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+import os
 
 class EZDiffusionModel:
-    def __init__(self,seed=1234):
+    def __init__(self,seed=1254):
         #Sets random seed for reproducibility
         np.random.seed(seed)  
         #Parameter ranges
@@ -37,7 +38,6 @@ class EZDiffusionModel:
         
         #Clips R_obs to avoid extreme errors 
         R_obs = np.clip(R_obs,epsilon,1-epsilon)
-
         L = np.log(R_obs/(1-R_obs))
 
         #Computes v_est
@@ -91,14 +91,19 @@ class EZDiffusionModel:
             results.append([v_true,a_true,t_true,v_est,a_est,t_est,v_bias,a_bias,t_bias,v_squared_error,a_squared_error,t_squared_error])
 
         return pd.DataFrame(results, columns=["v_true","a_true","t_true","v_est","a_est","t_est","v_bias","a_bias","t_bias","v_squared_error","a_squared_error","t_squared_error"])
-
+    
     #Runs simulation for different N values & saves results in CSV
     def run_simulation(self):
         for N in self.N_values:
             df = self.simulate_recover(N)
-            df.to_csv(f"data/results_n{N}.csv", index=False)
+            df.to_csv(f"/repo/ez-diffusion-model/data/results_n{N}.csv", index=False)
+            
             print(f"Completed simulation for N={N}")
 
 if __name__ == "__main__":
     model = EZDiffusionModel()
     model.run_simulation()
+
+#Issues
+# 1. Do I need the def run_simulation(self) on this file? Or do I turn it into bash?
+# 2. Do I keep the data file it creates under src or do i make the data directory outside or src?
